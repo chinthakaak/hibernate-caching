@@ -1,5 +1,7 @@
 package com.examples;
 
+import net.sf.ehcache.CacheManager;
+import net.sf.ehcache.config.CacheConfiguration;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
@@ -7,6 +9,7 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.cfg.AnnotationConfiguration;
 import org.hibernate.cfg.Environment;
+import org.hibernate.stat.Statistics;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -26,6 +29,15 @@ import java.util.Set;
  */
 public class BidirectionalManyToManyAnnotation {
     public static void main(String[] args) {
+//        CacheManager cacheManager = CacheManager.create();
+//        net.sf.ehcache.Cache cache = new net.sf.ehcache.Cache(new CacheConfiguration().)
+        Statistics stats = HibernateUtil.getSessionFactory().getStatistics();
+        System.out.println("Stats enabled=" + stats.isStatisticsEnabled());
+        stats.setStatisticsEnabled(true);
+        System.out.println("Stats enabled=" + stats.isStatisticsEnabled());
+
+
+
         Session session = HibernateUtil.getSessionFactory().openSession();
         Transaction transaction = session.beginTransaction();
 
@@ -44,6 +56,7 @@ public class BidirectionalManyToManyAnnotation {
         items.add(item3);
         category.setItems(items);
         session.save(category);
+        printStats(stats, 0);
 
         transaction.commit();
         session.close();
@@ -58,6 +71,24 @@ public class BidirectionalManyToManyAnnotation {
         session1.close();
 
     }
+    private static void printStats(Statistics stats, int i) {
+        System.out.println("***** " + i + " *****");
+        System.out.println("Fetch Count="
+                + stats.getEntityFetchCount());
+        System.out.println("Second Level Hit Count="
+                + stats.getSecondLevelCacheHitCount());
+        System.out
+                .println("Second Level Miss Count="
+                        + stats
+                        .getSecondLevelCacheMissCount());
+        System.out.println("Second Level Put Count="
+                + stats.getSecondLevelCachePutCount());
+    }
+
+//    private static void printData(Employee emp, Statistics stats, int count) {
+//        System.out.println(count+":: Name="+emp.getName()+", Zipcode="+emp.getAddress().getZipcode());
+//        printStats(stats, count);
+//    }
 
     @Entity
     @Table(name = "CATEGORY")
@@ -157,7 +188,7 @@ public class BidirectionalManyToManyAnnotation {
                         .setProperty(Environment.DIALECT, "org.hibernate.dialect.Oracle10gDialect")
                         .setProperty(Environment.SHOW_SQL, "true")
                         .setProperty(Environment.HBM2DDL_AUTO, "create")
-                        .setProperty(Environment.CACHE_REGION_FACTORY, "org.hibernate.cache.EhCacheProvider")
+                        .setProperty(Environment.CACHE_REGION_FACTORY, "net.sf.ehcache.hibernate.EhCacheRegionFactory")
                         .setProperty(Environment.USE_SECOND_LEVEL_CACHE, "true")
 
 //                        .setProperty(Environment.HBM2DDL_AUTO, "update")
